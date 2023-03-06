@@ -1,31 +1,26 @@
 import ContactList from 'components/ContactList/ContactList';
 import ContactForm from 'components/ContactForm/ContactForm';
-import { nanoid } from 'nanoid';
-import { useState, useEffect } from 'react';
 import Filter from 'components/Filter/Filter';
 import styles from './contactPage.module.scss';
-
-const getFromLocalStorage = () => JSON.parse(localStorage.getItem('contacts'));
+import { useDispatch, useSelector } from 'react-redux';
+import { addContact } from 'redux/contacts/contacts-slice';
+import { getContacts } from 'redux/contacts/contacts-selectors';
+import { getFilter } from 'redux/filter/filter-selectors';
+import { addFilter } from 'redux/filter/filter-slice';
 
 const ContactPage = () => {
-  const [contacts, setContacts] = useState(getFromLocalStorage());
-  const [filter, setFilter] = useState('');
+  const contacts = useSelector(getContacts);
+  const filter = useSelector(getFilter);
+  const dispatch = useDispatch();
 
-  useEffect(() => {
-    localStorage.setItem('contacts', JSON.stringify(contacts));
-  }, [contacts]);
-
-  const addContact = data => {
+  const onAddContact = data => {
     const checkForMatch = contacts.find(
       contact => contact.name.toLowerCase() === data.name.toLowerCase()
     );
     if (checkForMatch) {
       return alert(`${data.name} is already in contacts`);
     }
-    const newContact = { id: nanoid(2), ...data };
-    setContacts(prevState => {
-      return [...prevState, newContact];
-    });
+    dispatch(addContact(data));
   };
 
   //Функция ниже возвращает либо contacts либо отфильтрованый массив с контактами.
@@ -42,27 +37,19 @@ const ContactPage = () => {
     return newContact;
   };
 
-  const handleRemove = id => {
-    setContacts(prevState => {
-      const newState = prevState.filter(item => item.id !== id);
-      return newState;
-    });
-  };
-
   const onFilter = e => {
-    setFilter(e.target.value);
+    const { value } = e.target;
+    dispatch(addFilter(value));
   };
 
   return (
     <div className={styles.container}>
       <div className={styles.wrapper}>
         <h1 className={styles.title}>Phonebook</h1>
-        <ContactForm addContact={addContact} />
+        <ContactForm addContact={onAddContact} />
         <h2 className={styles.title}>Contacts</h2>
         <Filter filter={onFilter} filterValue={filter} />
-        {contacts.length !== 0 && (
-          <ContactList filterSearch={filterSearch()} remove={handleRemove} />
-        )}
+        {contacts.length !== 0 && <ContactList filterSearch={filterSearch()} />}
       </div>
     </div>
   );
